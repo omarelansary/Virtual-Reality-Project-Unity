@@ -71,8 +71,52 @@ namespace Tutorial_4
 
         private void SetCameraPosition(Detection face)
         {
-            // template code:
-            DetectedFace = face.leftEye;
+            // --- 1. Prepare Variables ---
+            float w = _webCamTexture.width;
+            float h = _webCamTexture.height;
+
+            // Convert normalized UV coordinates (0 to 1) to Pixel coordinates
+            Vector2 leftEyePixel = face.leftEye * new Vector2(w, h);
+            Vector2 rightEyePixel = face.rightEye * new Vector2(w, h);
+
+            // --- 2. Calculate Image Parameters (Source: Task 4.2) ---
+            
+            float s_img = Vector2.Distance(leftEyePixel, rightEyePixel);
+
+            // Optional: Log this value to console
+            // Debug.Log($"S_img (Pixels between eyes): {s_img}");
+
+            // Avoid division by zero if detection glitched
+            if (s_img < 0.1f) return; 
+
+            Vector2 eyesCenter = (leftEyePixel + rightEyePixel) / 2.0f;
+            float u = eyesCenter.x;
+            float v = eyesCenter.y;
+
+            float cx = w / 2.0f;
+            float cy = h / 2.0f;
+
+            float f = (float)focalLength;
+
+            float s_real = ipd;
+
+            // --- 3. Apply Formulas (Source: Page 3) ---
+
+            // Calculate Z (Depth)
+            float z = -(f * s_real) / s_img;
+
+            // Calculate X (Horizontal)
+            // Formula: x = ((u - c_x) * z) / f 
+            float x = ((u - cx) * z) / f;
+
+            // Calculate Y (Vertical)
+            // Formula: y = - ((v - c_y) * z) / f 
+            float y = -((v - cy) * z) / f;
+
+            // --- 4. Apply to Camera ---
+            
+            // Use localPosition to move relative to the parent (screen center)
+            transform.localPosition = new Vector3(x, y, z);
         }
     }
 }
